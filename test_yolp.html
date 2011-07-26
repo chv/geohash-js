@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<div id="map" style="width:480px; height:320px; border:solid 1px silver;"></div>
+
+<input type="text" id="level" style="width:4em;" value="5"></input>
+<div id="result" style="border: solid 1px silver;"></div>
+<div id="debug" style="border: solid 1px silver;"></div>
+<button id="clear">clear</button>
+
+
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script src="http://js.api.olp.yahooapis.jp/OpenLocalPlatform/V1/jsapi?appid=multifind"></script>
+<script src="geohash.js"></script>
+<script>
+window.onload = function(){
+	var ymap = new Y.Map("map"),
+		pos = [],
+		label = ["start", "end"],
+		drawBox = function(box){
+			ymap.addFeature(new Y.Polygon([
+				new Y.LatLng(box.latitude[0], box.longitude[0]),
+				new Y.LatLng(box.latitude[0], box.longitude[1]),
+				new Y.LatLng(box.latitude[1], box.longitude[1]),
+				new Y.LatLng(box.latitude[1], box.longitude[0])
+			], {strokeStyle: new Y.Style("ff0000", 4, 0.5)}));
+		};
+	
+	ymap.bind("click", function(latlng){
+		var l = pos.length,
+			level = $('#level').val(),
+			i;
+			
+		ymap.clearFeatures();
+		$('#result').empty();
+		if(l === 0){
+			pos[0] = latlng;
+		}
+		else{
+			pos[1] = latlng;
+			ymap.addFeature(new Y.Polyline(pos, {strokeStyle: new Y.Style("ff0000", 4, 0.5)}));
+			var edge = GeoHash.encodeLine(pos[0].lat(), pos[0].lng(), pos[1].lat(), pos[1].lng(), level);
+			for(i=0, l=edge.length; i<l; i++){
+				drawBox(edge[i].box);
+				$('#result').append(edge[i].hash).append(' ');
+			}
+		}
+		l = pos.length;
+		for(i=0; i<l; i++){
+			ymap.addFeature(new Y.Marker(pos[i]));
+		}
+	});
+	
+	$('#clear').bind("click", function(e){
+	pos = [];
+	ymap.clearFeature();
+	});
+	
+	ymap.drawMap(new Y.LatLng(35.176, 136.8854), 12, Y.LayerSetId.NORMAL);
+};
+</script>
+</body>
+</html>
