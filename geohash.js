@@ -38,11 +38,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			this.hashcode = hashcode || "";
 			this.latitude = lat || [];
 			this.longitude = lon || [];
-			this.center = {latitude:null, longitude:null};
-			if(this.latitude.length >= 2 && this.longitude.length >= 2){
-				this.center.latitude = (this.latitude[0] + this.latitude[1]) / 2;
-				this.center.longitude = (this.longitude[0] + this.longitude[1]) / 2;
-			}			
+						
 			return this;
 		}
 		HashObject.prototype = {
@@ -58,6 +54,18 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 					{latitude: this.latitude[1], longitude: this.longitude[0]}
 				];
 			},
+			//return center position
+			center: function(){
+				if(this.latitude.length >= 2 && this.longitude.length >= 2){
+					return {
+						latitude: (this.latitude[0] + this.latitude[1]) / 2,
+						longitude: (this.longitude[0] + this.longitude[1]) / 2
+					};
+				}
+				else{
+					return null;
+				}
+			}
 			//return neighbor hashobject
 			neighbor: function(dir){
 				var nexthashcode = calculateAdjacent(this.hashcode, dir);
