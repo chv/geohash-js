@@ -34,10 +34,10 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 		BORDERS.right.odd = BORDERS.top.even;
 		
 		//constructor of HashObject 
-		function HashObject(hashcode, lat, lon){
+		function HashObject(hashcode, lat1, lat2, lon1, lon2){
 			this.hashcode = hashcode || "";
-			this.latitude = lat || [];
-			this.longitude = lon || [];
+			this.latitude = [lat1, lat2];
+			this.longitude = [lon1, lon2];
 						
 			return this;
 		}
@@ -56,15 +56,10 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			},
 			//return center position
 			center: function(){
-				if(this.latitude.length >= 2 && this.longitude.length >= 2){
-					return {
-						latitude: (this.latitude[0] + this.latitude[1]) / 2,
-						longitude: (this.longitude[0] + this.longitude[1]) / 2
-					};
-				}
-				else{
-					return null;
-				}
+				return {
+					latitude: (this.latitude[0] + this.latitude[1]) / 2,
+					longitude: (this.longitude[0] + this.longitude[1]) / 2
+				};
 			},
 			//return neighbor hashobject
 			neighbor: function(dir){
@@ -102,7 +97,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 					is_even = !is_even;
 				}
 			}
-			return new HashObject(hashcode, lat, lon);
+			return new HashObject(hashcode, lat[0], lat[1], lon[0], lon[1]);
 		}
 
 		function encodeGeoHash(latitude, longitude, precision) {
@@ -129,7 +124,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 				}
 				hashcode += BASE32.charAt(ch);
 			}
-			return new HashObject(hashcode, [lat.from, lat.to], [lon.from, lon.to]);
+			return new HashObject(hashcode, lat.from, lat.to, lon.from, lon.to);
 		}
 		
 		function encodeLine2GeoHash(lat1, lon1, lat2, lon2, precision){
