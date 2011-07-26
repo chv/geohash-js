@@ -65,7 +65,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 				else{
 					return null;
 				}
-			}
+			},
 			//return neighbor hashobject
 			neighbor: function(dir){
 				var nexthashcode = calculateAdjacent(this.hashcode, dir);
