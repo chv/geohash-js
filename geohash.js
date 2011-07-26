@@ -1,11 +1,7 @@
 // geohash.js
-// ©2011 inuro
-// Distributed under the MIT License
-// 
-// original:
-// geohash.js
 // Geohash library for Javascript
 // (c) 2008 David Troy
+// (c) 2011 inuro
 // Distributed under the MIT License
 
 (function(){
@@ -56,7 +52,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			if (BORDERS[dir][type].indexOf(lastChr)!=-1){
 				base = calculateAdjacent(base, dir);
 			}
-			return base + BASE32[NEIGHBORS[dir][type].indexOf(lastChr)];
+			return base + BASE32.charAt(NEIGHBORS[dir][type].indexOf(lastChr));
 		}
 
 		function decodeGeoHash(geohash) {
@@ -69,7 +65,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 				i, j, c, cd, mask;
 			
 			for (i=0; i<l; i++) {
-				c = geohash[i];
+				c = geohash.charAt(i);
 				cd = BASE32.indexOf(c);
 				for (j=0; j<5; j++) {
 					mask = BITS[j];
@@ -127,7 +123,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 					bit++;
 				}
 				else{
-					geohash += BASE32[ch];
+					geohash += BASE32.charAt(ch);
 					bit = 0;
 					ch = 0;
 				}
@@ -180,6 +176,12 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			encodeLine: encodeLine2GeoHash
 		};
 	})();
+	
+	//commonJS interface
+	if(typeof exports === 'undefined'){
+		exports = {};
+	}
+	exports.GeoHash = GeoHash;
 }
 })();
 
