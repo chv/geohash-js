@@ -32,127 +32,116 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 		BORDERS.top.odd = BORDERS.right.even;
 		BORDERS.left.odd = BORDERS.bottom.even;
 		BORDERS.right.odd = BORDERS.top.even;
-
-		function refine_interval(interval, cd, mask) {
-			var mid = (interval[0] + interval[1])/2;
-			if (cd&mask){
-				interval[0] = mid;
-			}
-			else{
-				interval[1] = mid;
+		
+		//constructor of HashObject 
+		function HashObject(hashcode, lat, lon){
+			this.hashcode = hashcode || "";
+			this.latitude = lat || [];
+			this.longitude = lon || [];
+			this.center = {latitude:null, longitude:null};
+			if(this.latitude.length >= 2 && this.longitude.length >= 2){
+				this.center.latitude = (this.latitude[0] + this.latitude[1]) / 2;
+				this.center.longitude = (this.longitude[0] + this.longitude[1]) / 2;
+			}			
+			return this;
+		}
+		HashObject.prototype = {
+			toString: function(){
+				return this.hashcode;
+			},
+			//return 4 points for drawing as rect
+			rect: function(){
+				return [
+					{latitude: this.latitude[0], longitude: this.longitude[0]},
+					{latitude: this.latitude[0], longitude: this.longitude[1]},
+					{latitude: this.latitude[1], longitude: this.longitude[1]},
+					{latitude: this.latitude[1], longitude: this.longitude[0]}
+				];
+			},
+			//return neighbor hashobject
+			neighbor: function(dir){
+				var nexthashcode = calculateAdjacent(this.hashcode, dir);
+				return decodeGeoHash(nexthashcode);
 			}
 		}
 
-		function calculateAdjacent(srcHash, dir) {
-			var srcHash = srcHash.toLowerCase(),
-				lastChr = srcHash.charAt(srcHash.length-1),
-				type = (srcHash.length % 2) ? 'odd' : 'even',
-				base = srcHash.substring(0,srcHash.length-1);
+		function calculateAdjacent(hashcode, dir) {
+			var hashcode = hashcode.toLowerCase(),
+				lastChr = hashcode.charAt(hashcode.length-1),
+				type = (hashcode.length % 2) ? 'odd' : 'even',
+				basecode = hashcode.substring(0, hashcode.length-1);
 			
 			if (BORDERS[dir][type].indexOf(lastChr)!=-1){
-				base = calculateAdjacent(base, dir);
+				basecode = calculateAdjacent(basecode, dir);
 			}
-			return base + BASE32.charAt(NEIGHBORS[dir][type].indexOf(lastChr));
+			return basecode + BASE32.charAt(NEIGHBORS[dir][type].indexOf(lastChr));
 		}
 
-		function decodeGeoHash(geohash) {
+		function decodeGeoHash(hashcode) {
 			var is_even = 1,
 				lat = [-90.0, 90.0],
 				lon = [-180.0, 180.0],
-				lat_err = 90.0,
-				lon_err = 180.0,
-				l = geohash.length, 
-				i, j, c, cd, mask;
+				precision = hashcode.length, 
+				i, bit, c, cd, index, target;
 			
-			for (i=0; i<l; i++) {
-				c = geohash.charAt(i);
+			for (i=0; i<precision; i++) {
+				c = hashcode.charAt(i);
 				cd = BASE32.indexOf(c);
-				for (j=0; j<5; j++) {
-					mask = BITS[j];
-					if (is_even) {
-						lon_err /= 2;
-						refine_interval(lon, cd, mask);
-					} else {
-						lat_err /= 2;
-						refine_interval(lat, cd, mask);
-					}
+				for (bit=0; bit<5; bit++) {
+					index = cd & BITS[bit] ? 0 : 1;
+					target = is_even ? lon : lat;
+					target[index] = (target[0] + target[1])/2;
 					is_even = !is_even;
 				}
 			}
-			lat[2] = (lat[0] + lat[1])/2;
-			lon[2] = (lon[0] + lon[1])/2;
-
-			return { latitude: lat, longitude: lon};
+			return new HashObject(hashcode, lat, lon);
 		}
 
 		function encodeGeoHash(latitude, longitude, precision) {
 			var is_even = 1,
-				i = 0,
-				lat = [-90.0, 90.0],
-				lon = [-180.0, 180.0],
-				bit = 0,
-				ch = 0,
+				lat = {from: -90.0, to: 90.0, point: latitude},
+				lon = {from: -180.0, to: 180.0, point: longitude},
 				precision = precision || 12,
-				geohash = "",
-				mid;
+				hashcode = "",
+				ch, bit, mid, target;
 	
-			while (geohash.length < precision) {
-				if (is_even) {
-					mid = (lon[0] + lon[1]) / 2;
-					if (longitude > mid) {
+			while (hashcode.length < precision){
+				ch = 0;
+				for(bit=0; bit<5; bit++){
+					target = is_even ? lon : lat;
+					mid = (target.from + target.to) / 2;
+					if (target.point > mid) {
 						ch |= BITS[bit];
-						lon[0] = mid;
+						target.from = mid;
 					}
 					else{
-						lon[1] = mid;
+						target.to = mid;
 					}
+					is_even = !is_even;
 				}
-				else{
-					mid = (lat[0] + lat[1]) / 2;
-					if (latitude > mid) {
-						ch |= BITS[bit];
-						lat[0] = mid;
-					}
-					else{
-						lat[1] = mid;
-					}
-				}
-
-				is_even = !is_even;
-				if (bit < 4){
-					bit++;
-				}
-				else{
-					geohash += BASE32.charAt(ch);
-					bit = 0;
-					ch = 0;
-				}
+				hashcode += BASE32.charAt(ch);
 			}
-			return geohash;
+			return new HashObject(hashcode, [lat.from, lat.to], [lon.from, lon.to]);
 		}
 		
 		function encodeLine2GeoHash(lat1, lon1, lat2, lon2, precision){
 			var result = [],
-				hash1 = encodeGeoHash(lat1, lon1, precision),
-				box1 = decodeGeoHash(hash1),
-				walkline = function(hash, box, fromdir){
-					var i, dir, nexthash, nextbox,
+				hashobj1= encodeGeoHash(lat1, lon1, precision),
+				walkline = function(hashobj, fromdir){
+					var i, dir,
 						seg = [
-							{lat1: box.latitude[0], lon1: box.longitude[0], lat2: box.latitude[0], lon2: box.longitude[1], edge: "bottom"},
-							{lat1: box.latitude[0], lon1: box.longitude[1], lat2: box.latitude[1], lon2: box.longitude[1], edge: "right"},
-							{lat1: box.latitude[1], lon1: box.longitude[1], lat2: box.latitude[1], lon2: box.longitude[0], edge: "top"},
-							{lat1: box.latitude[1], lon1: box.longitude[0], lat2: box.latitude[0], lon2: box.longitude[0], edge: "left"}
-						],
-						l = seg.length;
+							{lat1: hashobj.latitude[0], lon1: hashobj.longitude[0], lat2: hashobj.latitude[0], lon2: hashobj.longitude[1], edge: "bottom"},
+							{lat1: hashobj.latitude[0], lon1: hashobj.longitude[1], lat2: hashobj.latitude[1], lon2: hashobj.longitude[1], edge: "right"},
+							{lat1: hashobj.latitude[1], lon1: hashobj.longitude[1], lat2: hashobj.latitude[1], lon2: hashobj.longitude[0], edge: "top"},
+							{lat1: hashobj.latitude[1], lon1: hashobj.longitude[0], lat2: hashobj.latitude[0], lon2: hashobj.longitude[0], edge: "left"}
+						];
 					
-					result.push({hash: hash, box: box});
-					for(i=0; i<l; i++){
+					result.push(hashobj);
+					for(i=0; i<4; i++){
 						if(intersectLineSegment(lat1, lon1, lat2, lon2, seg[i].lat1, seg[i].lon1, seg[i].lat2, seg[i].lon2)){
 							dir = seg[i].edge;
 							if(dir !== fromdir){
-								nexthash = calculateAdjacent(hash, dir);
-								nextbox = decodeGeoHash(nexthash);
-								walkline(nexthash, nextbox, OPPOSITE[dir]);
+								walkline(hashobj.neighbor(dir), OPPOSITE[dir]);
 								return;
 							}
 						}
@@ -160,7 +149,7 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 					return;
 				};
 			
-			walkline(hash1, box1, "");
+			walkline(hashobj1, "");
 			return result;
 		}
 		
@@ -172,8 +161,12 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 		return {
 			encode: encodeGeoHash,
 			decode: decodeGeoHash,
-			adjacent: calculateAdjacent,
-			encodeLine: encodeLine2GeoHash
+			calculateNeighborCode: calculateAdjacent,
+			encodeLine: encodeLine2GeoHash,
+			//old interface names
+			encodeGeoHash: encodeGeoHash,
+			decodeGeoHash: decodeGeoHash,
+			calculateAdjacent: calculateAdjacent
 		};
 	})();
 	

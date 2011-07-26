@@ -42,10 +42,10 @@ window.onload = function(){
 		else{
 			pos[1] = latlng;
 			ymap.addFeature(new Y.Polyline(pos, {strokeStyle: new Y.Style("ff0000", 4, 0.5)}));
-			var edge = GeoHash.encodeLine(pos[0].lat(), pos[0].lng(), pos[1].lat(), pos[1].lng(), level);
-			for(i=0, l=edge.length; i<l; i++){
-				drawBox(edge[i].box);
-				$('#result').append(edge[i].hash).append(' ');
+			var hashes = GeoHash.encodeLine(pos[0].lat(), pos[0].lng(), pos[1].lat(), pos[1].lng(), level);
+			for(i=0, l=hashes.length; i<l; i++){
+				drawBox(hashes[i]);
+				$('#result').append(hashes[i] + ' ');
 			}
 		}
 		l = pos.length;
@@ -55,8 +55,8 @@ window.onload = function(){
 	});
 	
 	$('#clear').bind("click", function(e){
-	pos = [];
-	ymap.clearFeature();
+		pos = [];
+		ymap.clearFeatures();
 	});
 	
 	ymap.drawMap(new Y.LatLng(35.176, 136.8854), 12, Y.LayerSetId.NORMAL);
