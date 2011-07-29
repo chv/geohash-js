@@ -10,7 +10,8 @@
 <div id="result" style="border: solid 1px silver;"></div>
 <div id="debug" style="border: solid 1px silver;"></div>
 <button id="clear">clear</button>
-
+<button id="test">test</button>
+<button id="test2">test2</button>
 
 <script src="http://code.jquery.com/jquery-latest.js"></script>
 <script src="http://js.api.olp.yahooapis.jp/OpenLocalPlatform/V1/jsapi?appid=multifind"></script>
@@ -28,7 +29,7 @@ window.onload = function(){
 				new Y.LatLng(box.latitude[1], box.longitude[0])
 			], {strokeStyle: new Y.Style("ff0000", 4, 0.5)}));
 		};
-	
+	ymap.addControl(new Y.SliderZoomControl());
 	ymap.bind("click", function(latlng){
 		var l = pos.length,
 			level = $('#level').val(),
@@ -57,6 +58,25 @@ window.onload = function(){
 	$('#clear').bind("click", function(e){
 		pos = [];
 		ymap.clearFeatures();
+	});
+	
+	
+	$('#test').bind("click", function(e){
+		var pos = [
+		//	new Y.LatLng(35.160283351814996, 136.88608664550782),
+		//	new Y.LatLng(35.21583930963441, 136.9417049316406)
+			new Y.LatLng(0.0, 35.626),
+			new Y.LatLng(0.0, 0.0)
+		];
+		var style = new Y.Style("ff0000", 4, 0.5);
+		var line = new Y.Polyline(pos, {strokeStyle: style});
+		ymap.addFeature(line);
+		var hashes = GeoHash.encodeLine(pos[0].lat(), pos[0].lng(), pos[1].lat(), pos[1].lng(), 5);
+		for(i=0, l=hashes.length; i<l; i++){
+			drawBox(hashes[i]);
+			$('#result').append(hashes[i] + ' ');
+		}
+		ymap.panTo(pos[0]);
 	});
 	
 	ymap.drawMap(new Y.LatLng(35.176, 136.8854), 12, Y.LayerSetId.NORMAL);

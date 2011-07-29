@@ -157,7 +157,11 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 		}
 		
 		function intersectLineSegment(lat1, lon1, lat2, lon2, lat3, lon3, lat4, lon4){
-			return (((lon1 - lon2) * (lat3 - lat1) + (lat1 - lat2) * (lon1 - lon3)) * ((lon1 - lon2) * (lat4 - lat1) + (lat1 - lat2) * (lon1 - lon4)) <= 0 && ((lon3 - lon4) * (lat1 - lat3) + (lat3 - lat4) * (lon3 - lon1)) * ((lon3 - lon4) * (lat2 - lat3) + (lat3 - lat4) * (lon3 - lon2)) <= 0);
+			return (
+				((lon2 - lon1) * (lat4 - lat3)) - ((lon4 - lon3) * (lat2 - lat1)) != 0 //parallel check
+			&&	((lon1 - lon2) * (lat3 - lat1) + (lat1 - lat2) * (lon1 - lon3)) * ((lon1 - lon2) * (lat4 - lat1) + (lat1 - lat2) * (lon1 - lon4)) <= 0
+			&&	((lon3 - lon4) * (lat1 - lat3) + (lat3 - lat4) * (lon3 - lon1)) * ((lon3 - lon4) * (lat2 - lat3) + (lat3 - lat4) * (lon3 - lon2)) <= 0
+			);
 		}
 		
 		//return interface
