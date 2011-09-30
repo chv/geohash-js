@@ -129,7 +129,10 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 		
 		function encodeLine2GeoHash(lat1, lon1, lat2, lon2, precision){
 			var result = [],
+				availableVerticalDir = lat2 == lat1 ? "none" : (lat2 - lat1 > 0 ? "top" : "bottom"),
+				availableHorizontalDir = lon2 == lon1 ? "none" : (lon2 - lon1 > 0 ? "right" : "left"),
 				hashobj1= encodeGeoHash(lat1, lon1, precision),
+				edge,
 				walkline = function(hashobj, fromdir){
 					var i, dir,
 						seg = [
@@ -141,11 +144,14 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 					
 					result.push(hashobj);
 					for(i=0; i<4; i++){
-						if(intersectLineSegment(lat1, lon1, lat2, lon2, seg[i].lat1, seg[i].lon1, seg[i].lat2, seg[i].lon2)){
-							dir = seg[i].edge;
-							if(dir !== fromdir){
-								walkline(hashobj.neighbor(dir), OPPOSITE[dir]);
-								return;
+						edge = seg[i].edge;
+						if(edge == availableVerticalDir || edge == availableHorizontalDir){
+							if(intersectLineSegment(lat1, lon1, lat2, lon2, seg[i].lat1, seg[i].lon1, seg[i].lat2, seg[i].lon2)){
+								dir = edge;
+								if(dir !== fromdir){
+									walkline(hashobj.neighbor(dir), OPPOSITE[dir]);
+									return;
+								}
 							}
 						}
 					}

@@ -72,11 +72,20 @@ window.onload = function(){
 		var line = new Y.Polyline(pos, {strokeStyle: style});
 		ymap.addFeature(line);
 		var hashes = GeoHash.encodeLine(pos[0].lat(), pos[0].lng(), pos[1].lat(), pos[1].lng(), 5);
-		for(i=0, l=hashes.length; i<l; i++){
+		for(var i=0, l=hashes.length; i<l; i++){
 			drawBox(hashes[i]);
 			$('#result').append(hashes[i] + ' ');
 		}
 		ymap.panTo(pos[0]);
+	});
+	
+	$('#test2').bind('click', function(e){
+		var hashes = GeoHash.encodeLine(35,135,34.99,134.99,5);
+	//	var hashes = GeoHash.encodeLine(35,135,35.01,135.01,5);
+		for(var i=0,l=hashes.length; i<l; i++){
+			drawBox(hashes[i]);
+			$('#result').append(hashes[i] + ' ');
+		}
 	});
 	
 	ymap.drawMap(new Y.LatLng(35.176, 136.8854), 12, Y.LayerSetId.NORMAL);
