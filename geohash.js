@@ -64,18 +64,20 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			//return neighbor hashobject
 			neighbor: function(dir){
 				var nexthashcode = calculateAdjacent(this.hashcode, dir);
+				if (nexthashcode == null) throw "End of world";
 				return decodeGeoHash(nexthashcode);
 			}
 		}
 
 		function calculateAdjacent(hashcode, dir) {
+			if (!hashcode) return null;
 			var hashcode = hashcode.toLowerCase(),
 				lastChr = hashcode.charAt(hashcode.length-1),
 				type = (hashcode.length % 2) ? 'odd' : 'even',
 				basecode = hashcode.substring(0, hashcode.length-1);
-			
 			if (BORDERS[dir][type].indexOf(lastChr)!=-1){
 				basecode = calculateAdjacent(basecode, dir);
+				if (!basecode) return null;
 			}
 			return basecode + BASE32.charAt(NEIGHBORS[dir][type].indexOf(lastChr));
 		}
