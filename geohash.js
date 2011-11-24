@@ -2,6 +2,7 @@
 // Geohash library for Javascript
 // (c) 2008 David Troy
 // (c) 2011 inuro
+// (c) 2011 Chv
 // Distributed under the MIT License
 
 (function(){
@@ -66,6 +67,24 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 				var nexthashcode = calculateAdjacent(this.hashcode, dir);
 				if (nexthashcode == null) throw "End of world";
 				return decodeGeoHash(nexthashcode);
+			},
+
+			// distanace to an other HashObject
+			distance: function(hashObject) {
+				var position1 = this.center(),
+					position2 = hashObject.center(),
+					lat1 = position1.latitude,
+					lon1 = position1.longitude,
+					lat2 = position2.latitude,
+					lon2 = position2.longitude,
+					R = 6371, // km
+					dLat = (lat2-lat1).toRad(),
+					dLon = (lon2-lon1).toRad(),
+					a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+						Math.cos(Number(lat1).toRad()) * Math.cos(Number(lat2).toRad()) *
+						Math.sin(dLon/2) * Math.sin(dLon/2),
+					c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+				return R * c;
 			}
 		}
 
@@ -171,12 +190,49 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			&&	((lon3 - lon4) * (lat1 - lat3) + (lat3 - lat4) * (lon3 - lon1)) * ((lon3 - lon4) * (lat2 - lat3) + (lat3 - lat4) * (lon3 - lon2)) <= 0
 			);
 		}
-		
+
+		/**
+		 * Calculates the (max.) eight neighboring hashes of the specified hash,
+		 * including diagonal neighbors.
+		 * On north/south pole there may be less than eight neighbors.
+		 *
+		 * @param {String} central geohash
+		 *
+		 * @return Array of neighbors, starting from the key directly above the
+		 *         central key and proceeding clockwise.
+		 */
+		function calculateNeighborCodes(hashcode) {
+			var top = calculateAdjacent(hashcode, 'top'),
+				right = calculateAdjacent(hashcode, 'right'),
+				bottom = calculateAdjacent(hashcode, 'bottom'),
+				left = calculateAdjacent(hashcode, 'left'),
+				top_left = top_right = bottom_left = bottom_right = null;
+			if (top) {
+				top_left = calculateAdjacent(top, 'left');
+				top_right = calculateAdjacent(top, 'right');
+			}
+			if (bottom) {
+				bottom_left = calculateAdjacent(bottom, 'left');
+				bottom_right = calculateAdjacent(bottom, 'right');
+			}
+			return [
+				top,
+				top_right,
+				right,
+				bottom_right,
+				bottom,
+				bottom_left,
+				left,
+				top_left
+			].filter(function(hash){ return hash !== null });
+		}
+
 		//return interface
 		return {
 			encode: encodeGeoHash,
 			decode: decodeGeoHash,
 			calculateNeighborCode: calculateAdjacent,
+			calculateNeighborCodes: calculateNeighborCodes,
 			encodeLine: encodeLine2GeoHash,
 			//old interface names
 			encodeGeoHash: encodeGeoHash,
@@ -184,7 +240,14 @@ if(typeof GeoHash === 'undefined' || !GeoHash){
 			calculateAdjacent: calculateAdjacent
 		};
 	})();
-	
+
+	// Converts numeric degrees to radians
+	if (typeof(Number.prototype.toRad) === "undefined") {
+		Number.prototype.toRad = function() {
+			return this * Math.PI / 180;
+		}
+	}
+
 	//commonJS interface
 	if(typeof exports === 'undefined'){
 		exports = {};
